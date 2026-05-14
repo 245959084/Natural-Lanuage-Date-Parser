@@ -1,8 +1,9 @@
-'''def main():
-    print("Hello from natural-lanuage-date-parser!")'''
+"""def main():
+print("Hello from natural-lanuage-date-parser!")"""
 
 from datetime import date, timedelta
 import re
+
 
 def parse(s: str, today: date | None = None) -> date:
     if today is None:
@@ -68,8 +69,18 @@ def parse(s: str, today: date | None = None) -> date:
 
 # ---------------- helpers ----------------
 
+
 def _weekday_index(name: str) -> int:
-    return ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"].index(name)
+    return [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+    ].index(name)
+
 
 def _next_weekday(today: date, name: str) -> date:
     target = _weekday_index(name)
@@ -78,6 +89,7 @@ def _next_weekday(today: date, name: str) -> date:
         diff = 7
     return today + timedelta(days=diff)
 
+
 def _last_weekday(today: date, name: str) -> date:
     target = _weekday_index(name)
     diff = (today.weekday() - target) % 7
@@ -85,10 +97,12 @@ def _last_weekday(today: date, name: str) -> date:
         diff = 7
     return today - timedelta(days=diff)
 
+
 def _this_weekday(today: date, name: str) -> date:
     target = _weekday_index(name)
     diff = (target - today.weekday()) % 7
     return today + timedelta(days=diff)
 
-'''if __name__ == "__main__":
-    main()'''
+
+"""if __name__ == "__main__":
+    main()"""
