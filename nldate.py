@@ -7,7 +7,7 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
     if today is None:
         today = date.today()
 
-    if _depth > 5:
+    if _depth > 10:
         raise ValueError("Too many nested date expressions")
 
     s = s.lower().strip()
@@ -18,6 +18,9 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
 
     # remove punctuation that breaks matching
     s = s.replace(".", "")
+
+    # normalize conjunctions
+    s = re.sub(r"\s+and\s+", " ", s)
 
     number_words = {
         "zero": "0",
@@ -39,7 +42,6 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
     s = re.sub(r"\b(a|an)\b", "1", s)
     s = re.sub(r"\bcouple of\b", "2", s)
 
-    # normalize repeated spaces
     s = re.sub(r"\s+", " ", s).strip()
 
     # -----------------------------
@@ -57,23 +59,23 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
     # -----------------------------
     # RELATIVE FUTURE
     # -----------------------------
-    m = re.match(r"in (\d+) days?", s)
+    m = re.fullmatch(r"in (\d+) days?", s)
     if m:
         return today + timedelta(days=int(m.group(1)))
 
-    m = re.match(r"in (\d+) weeks?", s)
+    m = re.fullmatch(r"in (\d+) weeks?", s)
     if m:
         return today + timedelta(weeks=int(m.group(1)))
 
-    m = re.match(r"in (\d+) months?", s)
+    m = re.fullmatch(r"in (\d+) months?", s)
     if m:
         return _add_months(today, int(m.group(1)))
 
-    m = re.match(r"in (\d+) years?", s)
+    m = re.fullmatch(r"in (\d+) years?", s)
     if m:
         return _add_years(today, int(m.group(1)))
 
-    m = re.match(r"(\d+) (day|week|month|year)s? from now", s)
+    m = re.fullmatch(r"(\d+) (day|week|month|year)s? from now", s)
     if m:
         n = int(m.group(1))
         unit = m.group(2)
@@ -93,41 +95,41 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
     # -----------------------------
     # RELATIVE PAST
     # -----------------------------
-    m = re.match(r"(\d+) days? ago", s)
+    m = re.fullmatch(r"(\d+) days? ago", s)
     if m:
         return today - timedelta(days=int(m.group(1)))
 
-    m = re.match(r"(\d+) weeks? ago", s)
+    m = re.fullmatch(r"(\d+) weeks? ago", s)
     if m:
         return today - timedelta(weeks=int(m.group(1)))
 
-    m = re.match(r"(\d+) months? ago", s)
+    m = re.fullmatch(r"(\d+) months? ago", s)
     if m:
         return _add_months(today, -int(m.group(1)))
 
-    m = re.match(r"(\d+) years? ago", s)
+    m = re.fullmatch(r"(\d+) years? ago", s)
     if m:
         return _add_years(today, -int(m.group(1)))
 
     # -----------------------------
     # WEEKDAY LOGIC
     # -----------------------------
-    m = re.match(
+    m = re.fullmatch(
         r"(next|last|this) "
         r"(monday|tuesday|wednesday|thursday|friday|saturday|sunday)",
         s,
     )
 
     if m:
-        mode, day_name = m.groups()
+        mode, day = m.groups()
 
         if mode == "next":
-            return _next_weekday(today, day_name)
+            return _next_weekday(today, day)
 
         if mode == "last":
-            return _last_weekday(today, day_name)
+            return _last_weekday(today, day)
 
-        return _this_weekday(today, day_name)
+        return _this_weekday(today, day)
 
     # -----------------------------
     # WEEK LEVEL
@@ -152,16 +154,16 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
         return today.replace(day=last_day)
 
     # -----------------------------
-    # COMBINED DURATIONS
+    # MULTI-UNIT BEFORE / AFTER
     # Examples:
     # "2 years, 3 months before Dec 1, 2025"
     # "1 year and 2 months after yesterday"
     # -----------------------------
-    m = re.match(
-        r"(?:(\d+)\s+years?(?:\s*,\s*|\s+and\s+)?)?"
-        r"(?:(\d+)\s+months?(?:\s*,\s*|\s+and\s+)?)?"
-        r"(?:(\d+)\s+weeks?(?:\s*,\s*|\s+and\s+)?)?"
-        r"(?:(\d+)\s+days?(?:\s*,\s*|\s+and\s+)?)?"
+    m = re.fullmatch(
+        r"(?:(\d+)\s+years?,?\s*)?"
+        r"(?:(\d+)\s+months?,?\s*)?"
+        r"(?:(\d+)\s+weeks?,?\s*)?"
+        r"(?:(\d+)\s+days?,?\s*)?"
         r"(before|after)\s+(.+)",
         s,
     )
@@ -197,49 +199,49 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
     # -----------------------------
     # SIMPLE BEFORE / AFTER
     # -----------------------------
-    m = re.match(r"(\d+) days? before (.+)", s)
+    m = re.fullmatch(r"(\d+) days? before (.+)", s)
     if m:
         n = int(m.group(1))
         anchor = parse(m.group(2), today, _depth + 1)
         return anchor - timedelta(days=n)
 
-    m = re.match(r"(\d+) weeks? before (.+)", s)
+    m = re.fullmatch(r"(\d+) weeks? before (.+)", s)
     if m:
         n = int(m.group(1))
         anchor = parse(m.group(2), today, _depth + 1)
         return anchor - timedelta(weeks=n)
 
-    m = re.match(r"(\d+) months? before (.+)", s)
+    m = re.fullmatch(r"(\d+) months? before (.+)", s)
     if m:
         n = int(m.group(1))
         anchor = parse(m.group(2), today, _depth + 1)
         return _add_months(anchor, -n)
 
-    m = re.match(r"(\d+) years? before (.+)", s)
+    m = re.fullmatch(r"(\d+) years? before (.+)", s)
     if m:
         n = int(m.group(1))
         anchor = parse(m.group(2), today, _depth + 1)
         return _add_years(anchor, -n)
 
-    m = re.match(r"(\d+) days? after (.+)", s)
+    m = re.fullmatch(r"(\d+) days? after (.+)", s)
     if m:
         n = int(m.group(1))
         anchor = parse(m.group(2), today, _depth + 1)
         return anchor + timedelta(days=n)
 
-    m = re.match(r"(\d+) weeks? after (.+)", s)
+    m = re.fullmatch(r"(\d+) weeks? after (.+)", s)
     if m:
         n = int(m.group(1))
         anchor = parse(m.group(2), today, _depth + 1)
         return anchor + timedelta(weeks=n)
 
-    m = re.match(r"(\d+) months? after (.+)", s)
+    m = re.fullmatch(r"(\d+) months? after (.+)", s)
     if m:
         n = int(m.group(1))
         anchor = parse(m.group(2), today, _depth + 1)
         return _add_months(anchor, n)
 
-    m = re.match(r"(\d+) years? after (.+)", s)
+    m = re.fullmatch(r"(\d+) years? after (.+)", s)
     if m:
         n = int(m.group(1))
         anchor = parse(m.group(2), today, _depth + 1)
@@ -248,22 +250,27 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
     # -----------------------------
     # ABSOLUTE DATES
     # -----------------------------
-    m = re.match(r"^(\d{4})/(\d{1,2})/(\d{1,2})$", s)
+    m = re.fullmatch(r"(\d{4})/(\d{1,2})/(\d{1,2})", s)
     if m:
         y, mo, d = map(int, m.groups())
         return date(y, mo, d)
 
-    # Month-name format
-    m = re.match(
-        r"^(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|"
+    # -----------------------------
+    # MONTH NAME FORMAT
+    # Examples:
+    # "Dec 1, 2025"
+    # "December 1st, 2025"
+    # -----------------------------
+    m = re.fullmatch(
+        r"(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|"
         r"jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|"
         r"oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+"
-        r"(\d{1,2})(st|nd|rd|th)?,\s*(\d{4})$",
+        r"(\d{1,2})(?:st|nd|rd|th)?(?:,)?\s+(\d{4})",
         s,
     )
 
     if m:
-        month_str, day_num, _, year = m.groups()
+        month_str, day, year = m.groups()
 
         month_map = {
             "jan": 1,
@@ -291,7 +298,7 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
             "december": 12,
         }
 
-        return date(int(year), month_map[month_str], int(day_num))
+        return date(int(year), month_map[month_str], int(day))
 
     # -----------------------------
     # ISO FORMAT
@@ -323,15 +330,12 @@ def _add_years(d: date, years: int) -> date:
         return d.replace(year=d.year + years)
 
     except ValueError:
-        # Handles Feb 29 -> Feb 28
+        # Feb 29 -> Feb 28 fallback
         return date(d.year + years, 2, 28)
 
 
 def _days_in_month(year: int, month: int) -> int:
-    if month == 12:
-        return 31
-
-    return (date(year, month + 1, 1) - timedelta(days=1)).day
+    return calendar.monthrange(year, month)[1]
 
 
 def _weekday_index(name: str) -> int:
