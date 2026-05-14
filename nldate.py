@@ -56,6 +56,13 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
     if s == "tomorrow":
         return today + timedelta(days=1)
 
+    # NEW EDGE CASE
+    if s == "the day after tomorrow":
+        return today + timedelta(days=2)
+
+    if s == "the day before yesterday":
+        return today - timedelta(days=2)
+
     # -----------------------------
     # RELATIVE FUTURE
     # -----------------------------
