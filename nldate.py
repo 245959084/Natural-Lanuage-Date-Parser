@@ -8,6 +8,9 @@ def parse(s: str, today: date | None = None) -> date:
 
     s = s.lower().strip()
 
+    # normalize "a" -> "1" for time expressions
+    s = re.sub(r"\ba\s+", "1 ", s)
+
     # --- basic words ---
     if s == "today":
         return today
@@ -46,12 +49,12 @@ def parse(s: str, today: date | None = None) -> date:
     if m:
         return today - timedelta(weeks=int(m.group(1)))
 
-    # --- X months ago (NEW EDGE CASE) ---
+    # --- X months ago ---
     m = re.match(r"(\d+) months? ago", s)
     if m:
         return _add_months(today, -int(m.group(1)))
 
-    # --- X years ago (NEW EDGE CASE) ---
+    # --- X years ago ---
     m = re.match(r"(\d+) years? ago", s)
     if m:
         return _add_years(today, -int(m.group(1)))
