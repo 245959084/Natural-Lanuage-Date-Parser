@@ -69,10 +69,11 @@ def parse(s: str, today: date | None = None) -> date:
         year, month, day = map(int, m.groups())
         return date(year, month, day)
 
-    # "December / Dec 1st, 2025"
+    # Month formats: Dec, Dec., December + ordinals
     m = re.match(
-        r"^(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|"
-        r"jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+"
+        r"^(jan(?:uary)?\.?|feb(?:ruary)?\.?|mar(?:ch)?\.?|apr(?:il)?\.?|may\.?|"
+        r"jun(?:e)?\.?|jul(?:y)?\.?|aug(?:ust)?\.?|sep(?:tember)?\.?|"
+        r"oct(?:ober)?\.?|nov(?:ember)?\.?|dec(?:ember)?\.?)\s+"
         r"(\d{1,2})(st|nd|rd|th)?,\s*(\d{4})$",
         s,
     )
@@ -80,34 +81,23 @@ def parse(s: str, today: date | None = None) -> date:
         month_str, day, _, year = m.groups()
 
         month_map = {
-            "jan": 1,
-            "january": 1,
-            "feb": 2,
-            "february": 2,
-            "mar": 3,
-            "march": 3,
-            "apr": 4,
-            "april": 4,
-            "may": 5,
-            "jun": 6,
-            "june": 6,
-            "jul": 7,
-            "july": 7,
-            "aug": 8,
-            "august": 8,
-            "sep": 9,
-            "september": 9,
-            "oct": 10,
-            "october": 10,
-            "nov": 11,
-            "november": 11,
-            "dec": 12,
-            "december": 12,
+            "jan": 1, "jan.": 1, "january": 1,
+            "feb": 2, "feb.": 2, "february": 2,
+            "mar": 3, "mar.": 3, "march": 3,
+            "apr": 4, "apr.": 4, "april": 4,
+            "may": 5, "may.": 5,
+            "jun": 6, "jun.": 6, "june": 6,
+            "jul": 7, "jul.": 7, "july": 7,
+            "aug": 8, "aug.": 8, "august": 8,
+            "sep": 9, "sep.": 9, "september": 9,
+            "oct": 10, "oct.": 10, "october": 10,
+            "nov": 11, "nov.": 11, "november": 11,
+            "dec": 12, "dec.": 12, "december": 12,
         }
 
         return date(int(year), month_map[month_str], int(day))
 
-    # YYYY-MM-DD (ISO)
+    # --- ISO format ---
     try:
         return date.fromisoformat(s)
     except ValueError:
