@@ -136,7 +136,6 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
         return today - timedelta(weeks=1)
 
     if s == "this week":
-        # Monday of current week
         return today - timedelta(days=today.weekday())
 
     # -----------------------------
@@ -150,7 +149,49 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
         return today.replace(day=last_day)
 
     # -----------------------------
-    # BEFORE / AFTER
+    # COMBINED DURATIONS
+    # Example:
+    # "2 years, 3 months before Dec 1, 2025"
+    # -----------------------------
+    m = re.match(
+        r"(?:(\d+)\s+years?,?\s*)?"
+        r"(?:(\d+)\s+months?,?\s*)?"
+        r"(?:(\d+)\s+weeks?,?\s*)?"
+        r"(?:(\d+)\s+days?,?\s*)?"
+        r"(before|after)\s+(.+)",
+        s,
+    )
+
+    if m:
+        years, months, weeks, days, direction, anchor_expr = m.groups()
+
+        years = int(years or 0)
+        months = int(months or 0)
+        weeks = int(weeks or 0)
+        days = int(days or 0)
+
+        anchor = parse(anchor_expr, today, _depth + 1)
+
+        sign = -1 if direction == "before" else 1
+
+        result = anchor
+
+        if years:
+            result = _add_years(result, sign * years)
+
+        if months:
+            result = _add_months(result, sign * months)
+
+        if weeks:
+            result += timedelta(weeks=sign * weeks)
+
+        if days:
+            result += timedelta(days=sign * days)
+
+        return result
+
+    # -----------------------------
+    # SIMPLE BEFORE / AFTER
     # -----------------------------
     m = re.match(r"(\d+) days? before (.+)", s)
     if m:
@@ -278,7 +319,6 @@ def _add_years(d: date, years: int) -> date:
         return d.replace(year=d.year + years)
 
     except ValueError:
-        # Handles Feb 29 -> Feb 28
         return date(d.year + years, 2, 28)
 
 
