@@ -16,7 +16,7 @@ def parse(s: str, today: date | None = None) -> date:
     if s == "tomorrow":
         return today + timedelta(days=1)
 
-    # --- in X days/weeks/months/years ---
+    # --- in X days ---
     m = re.match(r"in (\d+) days", s)
     if m:
         return today + timedelta(days=int(m.group(1)))
@@ -69,13 +69,13 @@ def parse(s: str, today: date | None = None) -> date:
         year, month, day = map(int, m.groups())
         return date(year, month, day)
 
-    # "December 1, 2025"
+    # "December 1st, 2025" OR "December 1, 2025"
     m = re.match(
-        r"^(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2}),\s*(\d{4})$",
+        r"^(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(st|nd|rd|th)?,\s*(\d{4})$",
         s,
     )
     if m:
-        month_str, day, year = m.groups()
+        month_str, day, _, year = m.groups()
 
         month_map = {
             "january": 1,
