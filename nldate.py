@@ -21,6 +21,11 @@ def parse(s: str, today: date | None = None) -> date:
     if m:
         return today + timedelta(days=int(m.group(1)))
 
+    # --- in X weeks (NEW EDGE CASE) ---
+    m = re.match(r"in (\d+) weeks", s)
+    if m:
+        return today + timedelta(weeks=int(m.group(1)))
+
     # --- X days ago ---
     m = re.match(r"(\d+) days ago", s)
     if m:
