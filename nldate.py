@@ -69,26 +69,39 @@ def parse(s: str, today: date | None = None) -> date:
         year, month, day = map(int, m.groups())
         return date(year, month, day)
 
-    # "December 1st, 2025" OR "December 1, 2025"
+    # "December / Dec 1st, 2025"
     m = re.match(
-        r"^(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(st|nd|rd|th)?,\s*(\d{4})$",
+        r"^(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|"
+        r"jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+"
+        r"(\d{1,2})(st|nd|rd|th)?,\s*(\d{4})$",
         s,
     )
     if m:
         month_str, day, _, year = m.groups()
 
         month_map = {
+            "jan": 1,
             "january": 1,
+            "feb": 2,
             "february": 2,
+            "mar": 3,
             "march": 3,
+            "apr": 4,
             "april": 4,
             "may": 5,
+            "jun": 6,
             "june": 6,
+            "jul": 7,
             "july": 7,
+            "aug": 8,
             "august": 8,
+            "sep": 9,
             "september": 9,
+            "oct": 10,
             "october": 10,
+            "nov": 11,
             "november": 11,
+            "dec": 12,
             "december": 12,
         }
 
