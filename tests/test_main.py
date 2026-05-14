@@ -39,9 +39,7 @@ def test_absolute_date():
 
 
 def test_before_expression():
-    assert parse("5 days before 2025-12-10", date(2025, 12, 1)) == date(
-        2025, 12, 5
-    )
+    assert parse("5 days before 2025-12-10", date(2025, 12, 1)) == date(2025, 12, 5)
 
 
 def test_after_expression():
