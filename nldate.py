@@ -39,6 +39,9 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
     s = re.sub(r"\b(a|an)\b", "1", s)
     s = re.sub(r"\bcouple of\b", "2", s)
 
+    # normalize repeated spaces
+    s = re.sub(r"\s+", " ", s).strip()
+
     # -----------------------------
     # BASIC WORDS
     # -----------------------------
@@ -116,15 +119,15 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
     )
 
     if m:
-        mode, day = m.groups()
+        mode, day_name = m.groups()
 
         if mode == "next":
-            return _next_weekday(today, day)
+            return _next_weekday(today, day_name)
 
         if mode == "last":
-            return _last_weekday(today, day)
+            return _last_weekday(today, day_name)
 
-        return _this_weekday(today, day)
+        return _this_weekday(today, day_name)
 
     # -----------------------------
     # WEEK LEVEL
@@ -150,14 +153,15 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
 
     # -----------------------------
     # COMBINED DURATIONS
-    # Example:
+    # Examples:
     # "2 years, 3 months before Dec 1, 2025"
+    # "1 year and 2 months after yesterday"
     # -----------------------------
     m = re.match(
-        r"(?:(\d+)\s+years?,?\s*)?"
-        r"(?:(\d+)\s+months?,?\s*)?"
-        r"(?:(\d+)\s+weeks?,?\s*)?"
-        r"(?:(\d+)\s+days?,?\s*)?"
+        r"(?:(\d+)\s+years?(?:\s*,\s*|\s+and\s+)?)?"
+        r"(?:(\d+)\s+months?(?:\s*,\s*|\s+and\s+)?)?"
+        r"(?:(\d+)\s+weeks?(?:\s*,\s*|\s+and\s+)?)?"
+        r"(?:(\d+)\s+days?(?:\s*,\s*|\s+and\s+)?)?"
         r"(before|after)\s+(.+)",
         s,
     )
@@ -259,7 +263,7 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
     )
 
     if m:
-        month_str, day, _, year = m.groups()
+        month_str, day_num, _, year = m.groups()
 
         month_map = {
             "jan": 1,
@@ -287,7 +291,7 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
             "december": 12,
         }
 
-        return date(int(year), month_map[month_str], int(day))
+        return date(int(year), month_map[month_str], int(day_num))
 
     # -----------------------------
     # ISO FORMAT
@@ -319,6 +323,7 @@ def _add_years(d: date, years: int) -> date:
         return d.replace(year=d.year + years)
 
     except ValueError:
+        # Handles Feb 29 -> Feb 28
         return date(d.year + years, 2, 28)
 
 
