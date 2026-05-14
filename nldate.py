@@ -5,6 +5,10 @@ from datetime import date, timedelta
 import re
 
 
+from datetime import date, timedelta
+import re
+
+
 def parse(s: str, today: date | None = None) -> date:
     if today is None:
         today = date.today()
@@ -58,7 +62,15 @@ def parse(s: str, today: date | None = None) -> date:
         anchor = parse(m.group(2), today)
         return anchor + timedelta(weeks=weeks)
 
-    # --- absolute date ---
+    # --- absolute date (EDGE CASE FIX ADDED HERE) ---
+
+    # handle YYYY/MM/DD (edge case)
+    m = re.match(r"^(\d{4})/(\d{1,2})/(\d{1,2})$", s)
+    if m:
+        year, month, day = map(int, m.groups())
+        return date(year, month, day)
+
+    # handle YYYY-MM-DD (standard ISO)
     try:
         return date.fromisoformat(s)
     except ValueError:
