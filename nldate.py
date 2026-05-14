@@ -20,9 +20,17 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
     s = s.replace(".", "")
 
     number_words = {
-        "zero": "0", "one": "1", "two": "2", "three": "3",
-        "four": "4", "five": "5", "six": "6", "seven": "7",
-        "eight": "8", "nine": "9", "ten": "10",
+        "zero": "0",
+        "one": "1",
+        "two": "2",
+        "three": "3",
+        "four": "4",
+        "five": "5",
+        "six": "6",
+        "seven": "7",
+        "eight": "8",
+        "nine": "9",
+        "ten": "10",
     }
 
     for word, digit in number_words.items():
@@ -167,18 +175,29 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
         month_str, day, _, year = m.groups()
 
         month_map = {
-            "jan": 1, "january": 1,
-            "feb": 2, "february": 2,
-            "mar": 3, "march": 3,
-            "apr": 4, "april": 4,
+            "jan": 1,
+            "january": 1,
+            "feb": 2,
+            "february": 2,
+            "mar": 3,
+            "march": 3,
+            "apr": 4,
+            "april": 4,
             "may": 5,
-            "jun": 6, "june": 6,
-            "jul": 7, "july": 7,
-            "aug": 8, "august": 8,
-            "sep": 9, "september": 9,
-            "oct": 10, "october": 10,
-            "nov": 11, "november": 11,
-            "dec": 12, "december": 12,
+            "jun": 6,
+            "june": 6,
+            "jul": 7,
+            "july": 7,
+            "aug": 8,
+            "august": 8,
+            "sep": 9,
+            "september": 9,
+            "oct": 10,
+            "october": 10,
+            "nov": 11,
+            "november": 11,
+            "dec": 12,
+            "december": 12,
         }
 
         return date(int(year), month_map[month_str], int(day))
@@ -197,6 +216,7 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
 # -----------------------------
 # HELPERS
 # -----------------------------
+
 
 def _add_months(d: date, months: int) -> date:
     year = d.year + (d.month - 1 + months) // 12
@@ -220,8 +240,13 @@ def _days_in_month(year: int, month: int) -> int:
 
 def _weekday_index(name: str) -> int:
     return [
-        "monday", "tuesday", "wednesday",
-        "thursday", "friday", "saturday", "sunday"
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
     ].index(name)
 
 
