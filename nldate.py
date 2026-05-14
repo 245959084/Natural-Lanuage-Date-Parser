@@ -10,9 +10,8 @@ def parse(s: str, today: date | None = None) -> date:
     s = s.lower().strip()
 
     # -----------------------------
-    # NORMALIZATION LAYER
+    # NORMALIZATION
     # -----------------------------
-
     number_words = {
         "zero": "0",
         "one": "1",
@@ -30,8 +29,7 @@ def parse(s: str, today: date | None = None) -> date:
     for word, digit in number_words.items():
         s = re.sub(rf"\b{word}\b", digit, s)
 
-    # "a"/"an"/"couple of"
-    s = re.sub(r"\b(a|an)\b", "1", s)
+    s = re.sub(r"\ba\b", "1", s)
     s = re.sub(r"\bcouple of\b", "2", s)
 
     # -----------------------------
@@ -63,7 +61,6 @@ def parse(s: str, today: date | None = None) -> date:
     if m:
         return _add_years(today, int(m.group(1)))
 
-    # "X from now"
     m = re.match(r"(\d+) (day|week|month|year)s? from now", s)
     if m:
         n = int(m.group(1))
@@ -112,43 +109,37 @@ def parse(s: str, today: date | None = None) -> date:
         return _this_weekday(today, day)
 
     # -----------------------------
-    # WEEK-LEVEL NATURAL LANGUAGE
+    # BEFORE / AFTER DATE (FIXED CORE EDGE CASE)
     # -----------------------------
-    if s == "next week":
-        return today + timedelta(weeks=1)
-    if s == "last week":
-        return today - timedelta(weeks=1)
-    if s == "this week":
-        return today
-
-    # -----------------------------
-    # MONTH BOUNDARIES
-    # -----------------------------
-    if s == "start of month":
-        return today.replace(day=1)
-
-    if s == "end of month":
-        last_day = calendar.monthrange(today.year, today.month)[1]
-        return today.replace(day=last_day)
-
-    # -----------------------------
-    # BEFORE / AFTER DATE
-    # -----------------------------
-    m = re.match(r"(\d+) days before (.+)", s)
+    m = re.match(r"(\d+) days? after (.+)", s)
     if m:
         n = int(m.group(1))
-        anchor = parse(m.group(2), today)
-        return anchor - timedelta(days=n)
+        anchor = _parse_anchor_date(m.group(2), today)
+        return anchor + timedelta(days=n)
 
     m = re.match(r"(\d+) weeks? after (.+)", s)
     if m:
         n = int(m.group(1))
-        anchor = parse(m.group(2), today)
+        anchor = _parse_anchor_date(m.group(2), today)
         return anchor + timedelta(weeks=n)
+
+    m = re.match(r"(\d+) days? before (.+)", s)
+    if m:
+        n = int(m.group(1))
+        anchor = _parse_anchor_date(m.group(2), today)
+        return anchor - timedelta(days=n)
 
     # -----------------------------
     # ABSOLUTE DATES
     # -----------------------------
+    return _parse_anchor_date(s, today)
+
+
+# -----------------------------
+# CENTRAL DATE PARSER
+# -----------------------------
+def _parse_anchor_date(s: str, today: date) -> date:
+    s = s.strip()
 
     # YYYY/MM/DD
     m = re.match(r"^(\d{4})/(\d{1,2})/(\d{1,2})$", s)
@@ -156,12 +147,12 @@ def parse(s: str, today: date | None = None) -> date:
         y, mo, d = map(int, m.groups())
         return date(y, mo, d)
 
-    # Month format
+    # Month formats (Dec 1, 2025 / Dec. 1st, 2025 / December 1, 2025)
     m = re.match(
         r"^(jan(?:uary)?\.?|feb(?:ruary)?\.?|mar(?:ch)?\.?|apr(?:il)?\.?|may\.?|"
         r"jun(?:e)?\.?|jul(?:y)?\.?|aug(?:ust)?\.?|sep(?:tember)?\.?|"
         r"oct(?:ober)?\.?|nov(?:ember)?\.?|dec(?:ember)?\.?)\s+"
-        r"(\d{1,2})(st|nd|rd|th)?,\s*(\d{4})$",
+        r"(\d{1,2})(st|nd|rd|th)?[,]?\s*(\d{4})$",
         s,
     )
     if m:
@@ -184,21 +175,18 @@ def parse(s: str, today: date | None = None) -> date:
 
         return date(int(year), month_map[month_str], int(day))
 
-    # -----------------------------
     # ISO
-    # -----------------------------
     try:
         return date.fromisoformat(s)
     except ValueError:
         pass
 
-    raise ValueError(f"Cannot parse: {s}")
+    raise ValueError(f"Cannot parse date: {s}")
 
 
 # -----------------------------
 # HELPERS
 # -----------------------------
-
 def _add_months(d: date, months: int) -> date:
     year = d.year + (d.month - 1 + months) // 12
     month = (d.month - 1 + months) % 12 + 1
