@@ -1,10 +1,5 @@
-"""def main():
-print("Hello from natural-lanuage-date-parser!")"""
-
 from datetime import date, timedelta
 import re
-
-
 
 
 def parse(s: str, today: date | None = None) -> date:
@@ -32,17 +27,23 @@ def parse(s: str, today: date | None = None) -> date:
         return today - timedelta(days=int(m.group(1)))
 
     # --- next weekday ---
-    m = re.match(r"next (monday|tuesday|wednesday|thursday|friday|saturday|sunday)", s)
+    m = re.match(
+        r"next (monday|tuesday|wednesday|thursday|friday|saturday|sunday)", s
+    )
     if m:
         return _next_weekday(today, m.group(1))
 
     # --- last weekday ---
-    m = re.match(r"last (monday|tuesday|wednesday|thursday|friday|saturday|sunday)", s)
+    m = re.match(
+        r"last (monday|tuesday|wednesday|thursday|friday|saturday|sunday)", s
+    )
     if m:
         return _last_weekday(today, m.group(1))
 
     # --- this weekday ---
-    m = re.match(r"this (monday|tuesday|wednesday|thursday|friday|saturday|sunday)", s)
+    m = re.match(
+        r"this (monday|tuesday|wednesday|thursday|friday|saturday|sunday)", s
+    )
     if m:
         return _this_weekday(today, m.group(1))
 
@@ -60,15 +61,40 @@ def parse(s: str, today: date | None = None) -> date:
         anchor = parse(m.group(2), today)
         return anchor + timedelta(weeks=weeks)
 
-    # --- absolute date (EDGE CASE FIX ADDED HERE) ---
+    # --- absolute date (EDGE CASES) ---
 
-    # handle YYYY/MM/DD (edge case)
+    # YYYY/MM/DD
     m = re.match(r"^(\d{4})/(\d{1,2})/(\d{1,2})$", s)
     if m:
         year, month, day = map(int, m.groups())
         return date(year, month, day)
 
-    # handle YYYY-MM-DD (standard ISO)
+    # "December 1, 2025"
+    m = re.match(
+        r"^(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2}),\s*(\d{4})$",
+        s,
+    )
+    if m:
+        month_str, day, year = m.groups()
+
+        month_map = {
+            "january": 1,
+            "february": 2,
+            "march": 3,
+            "april": 4,
+            "may": 5,
+            "june": 6,
+            "july": 7,
+            "august": 8,
+            "september": 9,
+            "october": 10,
+            "november": 11,
+            "december": 12,
+        }
+
+        return date(int(year), month_map[month_str], int(day))
+
+    # YYYY-MM-DD (ISO)
     try:
         return date.fromisoformat(s)
     except ValueError:
@@ -112,7 +138,3 @@ def _this_weekday(today: date, name: str) -> date:
     target = _weekday_index(name)
     diff = (target - today.weekday()) % 7
     return today + timedelta(days=diff)
-
-
-"""if __name__ == "__main__":
-    main()"""
