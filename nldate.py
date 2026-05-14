@@ -16,7 +16,7 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
     # NORMALIZATION
     # -----------------------------
 
-    # remove punctuation that breaks matching (important for months like "Jan.")
+    # remove punctuation that breaks matching
     s = s.replace(".", "")
 
     number_words = {
@@ -44,8 +44,10 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
     # -----------------------------
     if s == "today":
         return today
+
     if s == "yesterday":
         return today - timedelta(days=1)
+
     if s == "tomorrow":
         return today + timedelta(days=1)
 
@@ -72,12 +74,16 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
     if m:
         n = int(m.group(1))
         unit = m.group(2)
+
         if unit == "day":
             return today + timedelta(days=n)
+
         if unit == "week":
             return today + timedelta(weeks=n)
+
         if unit == "month":
             return _add_months(today, n)
+
         if unit == "year":
             return _add_years(today, n)
 
@@ -104,16 +110,20 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
     # WEEKDAY LOGIC
     # -----------------------------
     m = re.match(
-        r"(next|last|this) (monday|tuesday|wednesday|thursday|friday|saturday|sunday)",
+        r"(next|last|this) "
+        r"(monday|tuesday|wednesday|thursday|friday|saturday|sunday)",
         s,
     )
+
     if m:
         mode, day = m.groups()
 
         if mode == "next":
             return _next_weekday(today, day)
+
         if mode == "last":
             return _last_weekday(today, day)
+
         return _this_weekday(today, day)
 
     # -----------------------------
@@ -126,7 +136,7 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
         return today - timedelta(weeks=1)
 
     if s == "this week":
-        # normalize to Monday of current week (more standard meaning)
+        # Monday of current week
         return today - timedelta(days=today.weekday())
 
     # -----------------------------
@@ -142,17 +152,53 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
     # -----------------------------
     # BEFORE / AFTER
     # -----------------------------
-    m = re.match(r"(\d+) days before (.+)", s)
+    m = re.match(r"(\d+) days? before (.+)", s)
     if m:
         n = int(m.group(1))
         anchor = parse(m.group(2), today, _depth + 1)
         return anchor - timedelta(days=n)
+
+    m = re.match(r"(\d+) weeks? before (.+)", s)
+    if m:
+        n = int(m.group(1))
+        anchor = parse(m.group(2), today, _depth + 1)
+        return anchor - timedelta(weeks=n)
+
+    m = re.match(r"(\d+) months? before (.+)", s)
+    if m:
+        n = int(m.group(1))
+        anchor = parse(m.group(2), today, _depth + 1)
+        return _add_months(anchor, -n)
+
+    m = re.match(r"(\d+) years? before (.+)", s)
+    if m:
+        n = int(m.group(1))
+        anchor = parse(m.group(2), today, _depth + 1)
+        return _add_years(anchor, -n)
+
+    m = re.match(r"(\d+) days? after (.+)", s)
+    if m:
+        n = int(m.group(1))
+        anchor = parse(m.group(2), today, _depth + 1)
+        return anchor + timedelta(days=n)
 
     m = re.match(r"(\d+) weeks? after (.+)", s)
     if m:
         n = int(m.group(1))
         anchor = parse(m.group(2), today, _depth + 1)
         return anchor + timedelta(weeks=n)
+
+    m = re.match(r"(\d+) months? after (.+)", s)
+    if m:
+        n = int(m.group(1))
+        anchor = parse(m.group(2), today, _depth + 1)
+        return _add_months(anchor, n)
+
+    m = re.match(r"(\d+) years? after (.+)", s)
+    if m:
+        n = int(m.group(1))
+        anchor = parse(m.group(2), today, _depth + 1)
+        return _add_years(anchor, n)
 
     # -----------------------------
     # ABSOLUTE DATES
@@ -162,7 +208,7 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
         y, mo, d = map(int, m.groups())
         return date(y, mo, d)
 
-    # Month format
+    # Month-name format
     m = re.match(
         r"^(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|"
         r"jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|"
@@ -203,10 +249,11 @@ def parse(s: str, today: date | None = None, _depth: int = 0) -> date:
         return date(int(year), month_map[month_str], int(day))
 
     # -----------------------------
-    # ISO
+    # ISO FORMAT
     # -----------------------------
     try:
         return date.fromisoformat(s)
+
     except ValueError:
         pass
 
@@ -222,19 +269,23 @@ def _add_months(d: date, months: int) -> date:
     year = d.year + (d.month - 1 + months) // 12
     month = (d.month - 1 + months) % 12 + 1
     day = min(d.day, _days_in_month(year, month))
+
     return date(year, month, day)
 
 
 def _add_years(d: date, years: int) -> date:
     try:
         return d.replace(year=d.year + years)
+
     except ValueError:
+        # Handles Feb 29 -> Feb 28
         return date(d.year + years, 2, 28)
 
 
 def _days_in_month(year: int, month: int) -> int:
     if month == 12:
         return 31
+
     return (date(year, month + 1, 1) - timedelta(days=1)).day
 
 
@@ -252,21 +303,27 @@ def _weekday_index(name: str) -> int:
 
 def _next_weekday(today: date, name: str) -> date:
     target = _weekday_index(name)
+
     diff = (target - today.weekday() + 7) % 7
+
     if diff == 0:
         diff = 7
+
     return today + timedelta(days=diff)
 
 
 def _last_weekday(today: date, name: str) -> date:
     target = _weekday_index(name)
+
     diff = (today.weekday() - target + 7) % 7
+
     if diff == 0:
         diff = 7
+
     return today - timedelta(days=diff)
 
 
 def _this_weekday(today: date, name: str) -> date:
-    # returns the occurrence in the current week (Monday-based)
     target = _weekday_index(name)
+
     return today + timedelta(days=(target - today.weekday()))
