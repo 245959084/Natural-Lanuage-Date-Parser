@@ -17,22 +17,22 @@ def parse(s: str, today: date | None = None) -> date:
         return today + timedelta(days=1)
 
     # --- in X days ---
-    m = re.match(r"in (\d+) days", s)
+    m = re.match(r"in (\d+) days?", s)
     if m:
         return today + timedelta(days=int(m.group(1)))
 
     # --- in X weeks ---
-    m = re.match(r"in (\d+) weeks", s)
+    m = re.match(r"in (\d+) weeks?", s)
     if m:
         return today + timedelta(weeks=int(m.group(1)))
 
     # --- in X months ---
-    m = re.match(r"in (\d+) months", s)
+    m = re.match(r"in (\d+) months?", s)
     if m:
         return _add_months(today, int(m.group(1)))
 
-    # --- in X years (NEW EDGE CASE) ---
-    m = re.match(r"in (\d+) years", s)
+    # --- in X years (UPDATED: supports singular + plural) ---
+    m = re.match(r"in (\d+) years?", s)
     if m:
         return _add_years(today, int(m.group(1)))
 
@@ -135,7 +135,6 @@ def _add_years(d: date, years: int) -> date:
     try:
         return d.replace(year=d.year + years)
     except ValueError:
-        # handles Feb 29 → Feb 28 in non-leap years
         return date(d.year + years, 2, 28)
 
 
