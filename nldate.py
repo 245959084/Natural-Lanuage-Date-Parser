@@ -31,15 +31,20 @@ def parse(s: str, today: date | None = None) -> date:
     if m:
         return _add_months(today, int(m.group(1)))
 
-    # --- in X years (UPDATED: supports singular + plural) ---
+    # --- in X years ---
     m = re.match(r"in (\d+) years?", s)
     if m:
         return _add_years(today, int(m.group(1)))
 
     # --- X days ago ---
-    m = re.match(r"(\d+) days ago", s)
+    m = re.match(r"(\d+) days? ago", s)
     if m:
         return today - timedelta(days=int(m.group(1)))
+
+    # --- X week(s) ago (NEW EDGE CASE) ---
+    m = re.match(r"(\d+) weeks? ago", s)
+    if m:
+        return today - timedelta(weeks=int(m.group(1)))
 
     # --- next weekday ---
     m = re.match(
@@ -84,7 +89,7 @@ def parse(s: str, today: date | None = None) -> date:
         year, month, day = map(int, m.groups())
         return date(year, month, day)
 
-    # Month formats: Dec, Dec., December + ordinals
+    # Month formats
     m = re.match(
         r"^(jan(?:uary)?\.?|feb(?:ruary)?\.?|mar(?:ch)?\.?|apr(?:il)?\.?|may\.?|"
         r"jun(?:e)?\.?|jul(?:y)?\.?|aug(?:ust)?\.?|sep(?:tember)?\.?|"
