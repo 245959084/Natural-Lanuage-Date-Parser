@@ -8,7 +8,25 @@ def parse(s: str, today: date | None = None) -> date:
 
     s = s.lower().strip()
 
-    # normalize "a" -> "1" for time expressions
+    # --- normalize number words (NEW EDGE CASE FIX) ---
+    number_words = {
+        "zero": "0",
+        "one": "1",
+        "two": "2",
+        "three": "3",
+        "four": "4",
+        "five": "5",
+        "six": "6",
+        "seven": "7",
+        "eight": "8",
+        "nine": "9",
+        "ten": "10",
+    }
+
+    for word, digit in number_words.items():
+        s = re.sub(rf"\b{word}\b", digit, s)
+
+    # normalize "a" -> 1 for time expressions
     s = re.sub(r"\ba\s+", "1 ", s)
 
     # --- basic words ---
@@ -44,7 +62,7 @@ def parse(s: str, today: date | None = None) -> date:
     if m:
         return today - timedelta(days=int(m.group(1)))
 
-    # --- X weeks ago ---
+    # --- X weeks ago (NEW WORKS FOR WORDS NOW) ---
     m = re.match(r"(\d+) weeks? ago", s)
     if m:
         return today - timedelta(weeks=int(m.group(1)))
