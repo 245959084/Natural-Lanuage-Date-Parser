@@ -21,10 +21,20 @@ def parse(s: str, today: date | None = None) -> date:
     if m:
         return today + timedelta(days=int(m.group(1)))
 
-    # --- in X weeks (NEW EDGE CASE) ---
+    # --- in X weeks ---
     m = re.match(r"in (\d+) weeks", s)
     if m:
         return today + timedelta(weeks=int(m.group(1)))
+
+    # --- in X months ---
+    m = re.match(r"in (\d+) months", s)
+    if m:
+        return _add_months(today, int(m.group(1)))
+
+    # --- in X years (NEW EDGE CASE) ---
+    m = re.match(r"in (\d+) years", s)
+    if m:
+        return _add_years(today, int(m.group(1)))
 
     # --- X days ago ---
     m = re.match(r"(\d+) days ago", s)
@@ -112,6 +122,27 @@ def parse(s: str, today: date | None = None) -> date:
 
 
 # ---------------- helpers ----------------
+
+
+def _add_months(d: date, months: int) -> date:
+    year = d.year + (d.month - 1 + months) // 12
+    month = (d.month - 1 + months) % 12 + 1
+    day = min(d.day, _days_in_month(year, month))
+    return date(year, month, day)
+
+
+def _add_years(d: date, years: int) -> date:
+    try:
+        return d.replace(year=d.year + years)
+    except ValueError:
+        # handles Feb 29 → Feb 28 in non-leap years
+        return date(d.year + years, 2, 28)
+
+
+def _days_in_month(year: int, month: int) -> int:
+    if month == 12:
+        return 31
+    return (date(year, month + 1, 1) - timedelta(days=1)).day
 
 
 def _weekday_index(name: str) -> int:
